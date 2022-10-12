@@ -114,48 +114,40 @@ def face_detect(image):
         
     return face
 for usr in os.listdir(IMG_PATH):
+    embeds = []
     for file in glob.glob(os.path.join(IMG_PATH, usr)+'/*.jpg'):
         try:
             # img = Image.open(file)
             img = cv2.imread(file)
+            
             print(img.shape)
+            
+            gray = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
             face = face_detect(img)
-            # cv2.imshow("face", face)
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows()
+            
+            # x = np.zeros(gray.shape)
+            # x[:,:,0] = gray
+            # x[:,:,1] = gray
+            # x[:,:,2] = gray
+            cv2.imshow("face", gray)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
         except:
             continue
         with torch.no_grad():
             embed = model(trans(img).to(device))
-            embeddings.append(embed.numpy()) #1 anh, kich thuoc [1,512]
-            names.append(usr)
-    # if len(embeds) == 0:
-    #     continue
-    # embedding = torch.cat(embeds).mean(0, keepdim=True) #dua ra trung binh cua 50 anh, kich thuoc [1,512]
-    # embeddings.append(embedding.numpy()) # 1 cai list n cai [1,512]
-    
+            embeds.append(embed) #1 anh, kich thuoc [1,512]
+    if len(embeds) == 0:
+        continue
+    embedding = torch.cat(embeds).mean(0, keepdim=True) #dua ra trung binh cua 50 anh, kich thuoc [1,512]
+    embeddings.append(embedding.numpy()) # 1 cai list n cai [1,512]
+    names.append(usr)
 print(names)
 le.fit_transform(names)
 print(len(embeddings))
 
 label = le.fit_transform(names)
 data = np.asarray(embeddings).reshape(len(embeddings),512)
-print("Shape data")
-print(type(data))
 print(data.shape)
 print(label.shape)
 print(label)
-clf = make_pipeline(StandardScaler(), SVC(gamma='auto',probability = True))
-clf.fit(data,label)
-x = datetime.datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
-import pickle
-file_model = "Model/"+x+"_SVM.pkl"
-file_user =  "List_user/"+x+"_ListUser.pkl"
-file_embed = "Embeded/EmbedFace/" + x + "_listFace_embeded.pkl"
-file_list_name = "Embeded/EmbededList/" +x  +"_list_Name_embeded.pkl"
-print(names)
-print(le.classes_)
-pickle.dump(clf,open(file_model,"wb"))
-pickle.dump(le.classes_,open(file_user,"wb"))
-pickle.dump(data,open(file_embed,"wb"))
-pickle.dump(names,open(file_list_name,"wb"))

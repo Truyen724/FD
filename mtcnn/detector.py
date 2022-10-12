@@ -9,7 +9,6 @@ from mtcnn.box_utils import nms, calibrate_box, get_image_boxes, convert_to_squa
 from mtcnn.first_stage import run_first_stage
 from mtcnn.models import PNet, RNet, ONet
 
-
 class MtcnnDetector:
     def __init__(self, net='mtcnn', type='cuda'):
         cudnn.benchmark = True
