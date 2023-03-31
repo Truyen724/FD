@@ -90,11 +90,9 @@ def face_detect(image):
     boxes, facial5points = detector.detect_faces(img)
     for box in boxes:
         (startX,startY,endX,endY)=box[:4].astype('int')
-
         #ensure the bounding boxes fall within the dimensions of the frame
         (startX,startY)=(max(0,startX),max(0,startY))
         (endX,endY)=(min(w-1,endX), min(h-1,endY))
-
         #extract the face ROI, convert it from BGR to RGB channel, resize it to 224,224 and preprocess it
         face=img[startY:endY, startX:endX]
         face=cv2.resize(face,(160,160))
@@ -126,7 +124,7 @@ for usr in os.listdir(IMG_PATH):
         except:
             continue
         with torch.no_grad():
-            embed = model(trans(face).to(device))
+            embed = model(trans(face).to(device)).cpu()
             embeddings.append(embed.numpy()) #1 anh, kich thuoc [1,512]
             names.append(usr)
     # if len(embeds) == 0:
