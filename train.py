@@ -71,7 +71,7 @@ print(device)
 def trans(img):
     transform = transforms.Compose([
             transforms.ToTensor(),
-            fixed_image_standardization
+            # fixed_image_standardization
         ])
     return transform(img).unsqueeze(0)
 def fixed_image_standardization(image_tensor):
@@ -80,7 +80,7 @@ def fixed_image_standardization(image_tensor):
 
 model = InceptionResnetV1(
     classify=False,
-    pretrained="casia-webface"
+    pretrained="vggface2"
 ).to(device)
 model.eval()
 def face_detect(image):
@@ -120,13 +120,13 @@ for usr in os.listdir(IMG_PATH):
             img = cv2.imread(file)
             print(img.shape)
             face = face_detect(img)
-            # cv2.imshow("face", face)
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows()
+            cv2.imshow("face", face)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
         except:
             continue
         with torch.no_grad():
-            embed = model(trans(img).to(device))
+            embed = model(trans(face).to(device))
             embeddings.append(embed.numpy()) #1 anh, kich thuoc [1,512]
             names.append(usr)
     # if len(embeds) == 0:

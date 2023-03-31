@@ -3,6 +3,7 @@ from numpy.linalg import norm
 from re import X
 import threading
 import cv2
+import os
 from facenet_pytorch import InceptionResnetV1
 # import tensorflow as tf
 import time 
@@ -18,13 +19,14 @@ from align_faces import warp_and_crop_face, get_reference_facial_points
 from mtcnn.detector import MtcnnDetector
 from sklearn.metrics.pairwise import cosine_similarity
 detector = MtcnnDetector()
+from sklearn.metrics.pairwise import euclidean_distances
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 def trans(img):
     transform = transforms.Compose([
             transforms.ToTensor(),
-            fixed_image_standardization
+            # fixed_image_standardization
         ])
     return transform(img).unsqueeze(0)
 def fixed_image_standardization(image_tensor):
@@ -33,7 +35,7 @@ def fixed_image_standardization(image_tensor):
 
 model_resnet = InceptionResnetV1(
     classify=False,
-    pretrained="casia-webface"
+    pretrained="vggface2"
 ).to(device)
 model_resnet.eval()
 
@@ -41,13 +43,20 @@ def embed_face(img):
     img= cv2.resize(img,(160,160))
     with torch.no_grad():
         embed = model_resnet(trans(img).to(device))
-    return embed
-
-model = pickle.load(open("Model/2022_10_11_21-53-32_SVM.pkl","rb"))
-names = pickle.load(open("List_user/2022_10_11_21-40-58_ListUser.pkl","rb"))
-
-list_embeded = pickle.load(open("Embeded/EmbedFace/2022_10_12_14-00-56_listFace_embeded.pkl","rb"))
-list_name_embeded = pickle.load(open("Embeded/EmbededList/2022_10_12_14-00-56_list_Name_embeded.pkl","rb"))
+        # embed = model_resnet(trans(img))
+    return embed.cpu()
+newest_model = os.listdir("Model")[-1]
+print(newest_model)
+model = pickle.load(open("Model/"+newest_model,"rb"))
+newest_name = os.listdir("List_user")[-1]
+print(newest_name)
+names = pickle.load(open("List_user/" + newest_name,"rb"))
+newest_list_embeded = os.listdir("Embeded/EmbedFace")[-1]
+print(newest_list_embeded)
+list_embeded = pickle.load(open("Embeded/EmbedFace/"+newest_list_embeded,"rb"))
+newest_name_embeded = os.listdir("Embeded/EmbededList")[-1]
+print(newest_name_embeded)
+list_name_embeded = pickle.load(open("Embeded/EmbededList/"+newest_name_embeded,"rb"))
 # embed = np.zeros(shape=(1,512))
 # def get_cosin(y,**args):
 #     embed = args["args"]
@@ -56,10 +65,11 @@ list_name_embeded = pickle.load(open("Embeded/EmbededList/2022_10_12_14-00-56_li
 #     return cos_sim
 
 def predict_cosim(embed):
-    list_cosin2 = cosine_similarity(embed.reshape(1, -1),list_embeded).reshape(-1)
+    list_cosin2 = 1 - cosine_similarity(embed.reshape(1, -1),list_embeded).reshape(-1)
     index  = np.argmax(list_cosin2)
     name = list_name_embeded[index]
     probability = list_cosin2[index]
+    print(index)
     return list_cosin2, name,probability
 print(names)
 probability = 0.87
@@ -95,8 +105,8 @@ def predict_face(embed_img):
 
 def mask_detect(image):
     img = image.copy()
-    (h,w) = img.shape[:2]
-    boxes, facial5points = detector.detect_faces(img)
+    (h,w) = image.shape[:2]
+    boxes, facial5points = detector.detect_faces(image)
 
     if(len(boxes)!=0):
         for box in boxes:
@@ -163,15 +173,17 @@ a = 10
 def PlayCamera(id):    
     video_capture = cv2.VideoCapture(id)
     while True:
-        x = time.time()
-        ret, frame = video_capture.read()
-        # img = frame[0:128,0:128]
-        # print(model.predict(np.array([img])))
-        # img = mask_detect(frame)
-        img = sim_detect(frame)
-        print(time.time() - x)
-        cv2.imshow('{}'.format(id), img)        
-        
+        try:
+            x = time.time()
+            ret, frame = video_capture.read()
+            # img = frame[0:128,0:128]
+            # print(model.predict(np.array([img])))
+            # img = mask_detect(frame)
+            img = sim_detect(frame)
+            print(time.time() - x)
+            cv2.imshow('{}'.format(id), img)        
+        except:
+            pass
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     video_capture.release()
@@ -186,7 +198,8 @@ def detect_svm():
     for t in threads: 
         t.join()
 if __name__ == '__main__':
-    detect_svm()
+    # detect_svm()
+    PlayCamera(0)
 # Footer
 # © 2022 GitHub, Inc.
 # Footer navigation
